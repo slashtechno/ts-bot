@@ -21,6 +21,14 @@ const config = convict({
         env: 'SLACK_BOT_TOKEN',
 
   },
+  },
+  server: {
+    port: {
+        doc: 'The port to listen on',
+        format: 'port',
+        default: 3000,
+        env: 'PORT',
+    },
   }
 }
 );
