@@ -1,6 +1,7 @@
 import configuration from './config.js';
 import log from 'loglevel';
 import pkg from '@slack/bolt';
+import axios from 'axios';
 const { App } = pkg;
 
 const app = new App({
@@ -18,6 +19,22 @@ app.command(
     await respond("Hello, world! :)\nYou said: " + command.text);
     }
 );
+
+app.command(
+    '/test-api' ,
+    async ({command, ack, respond}) => {
+        await ack();
+        // https://docker-docs.uclv.cu/registry/spec/api/#listing-image-tags
+        axios.get('https://registry.hub.docker.com/v2/repositories/library/ubuntu/tags')
+        .then((response) => {
+            respond(response.data);
+        })
+        .catch((error) => {
+            log.error(error);
+            respond("Error encountered - check logs");
+        });
+    }
+)
 
 // (async () => {
 //     await app.start(configuration.get('server.port'));
