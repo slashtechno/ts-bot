@@ -14,7 +14,8 @@ app.command(
     async ({command, ack, respond}) => {
     // Acknowledge 
     await ack();
-    await respond("Hello, world! :)")
+    log.info(`Received command: ${command.text}`);
+    await respond("Hello, world! :)\nYou said: " + command.text);
     }
 );
 
