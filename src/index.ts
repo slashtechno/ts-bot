@@ -8,7 +8,6 @@ import Docker from 'dockerode';
 import slug from 'limax';
 const { App } = pkg;
 import fs from 'fs';
-import exp from 'constants';
 
 const app = new App({
     appToken: configuration.get('slack.appToken'),
@@ -28,10 +27,9 @@ app.command(
 );
 
 app.command(
-    '/test-api',
+    '/export-docker-image',
     async ({ command, ack, respond }) => {
         await ack();
-        await respond("Test API command received");
         // docker.listContainers({ all: true }, function (err, containers) {
         //     containers.forEach(function (containerInfo) {
         //         docker.getContainer(containerInfo.Id).inspect(function (err, data) {
@@ -40,14 +38,19 @@ app.command(
         //     });
         // }
         // );
-        
+
         // TODO: Figure out why inspect sometimes states that the image does not exist
-        docker.pull('hello-world:latest')
+        const image = command.text;
+        await respond(`Pulling image: ${image}`);
+        docker.pull(image)
             .then(async () => {
-                log.debug("Pulled hello-world:latest");
-                await exportImage('hello-world:latest');
+                log.info(`Exporting image: ${image}`);
+                await exportImage(image);
+                await respond(`Exported image: ${image}`);
+
             })
-            .catch(function (error) {
+            .catch(async (error) => {
+                await respond(`Error exporting image: ${image}; check the logs for more information`);
                 log.error(error);
             });
     }
@@ -56,7 +59,7 @@ app.command(
 async function exportImage(imageName: string): Promise<void> {
     try {
         const image = docker.getImage(imageName);
-        const data = await image.inspect(); 
+        const data = await image.inspect();
         log.debug(data);
         // Create the directory if it does not exist
         // https://stackoverflow.com/a/26815894/18270659
