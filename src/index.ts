@@ -6,8 +6,10 @@ import path from 'path';
 import Docker from 'dockerode';
 // https://github.com/simov/slugify/issues/24#issuecomment-629725749
 import slug from 'limax';
+import git from 'isomorphic-git'
 const { App } = pkg;
 import fs from 'fs';
+import * as isoHttp from 'isomorphic-git/http/node';
 
 const app = new App({
     appToken: configuration.get('slack.appToken'),
@@ -63,7 +65,7 @@ async function exportImage(imageName: string): Promise<void> {
         log.debug(data);
         // Create the directory if it does not exist
         // https://stackoverflow.com/a/26815894/18270659
-        const exportDirectory = configuration.get('docker.destination.exportDirectory');
+        const exportDirectory = configuration.get('docker.destination.exportDirectory.exportDirectoryPath');
         if (!fs.existsSync(exportDirectory)) {
             log.warn(`Export directory does not exist: ${exportDirectory}; creating it`);
             fs.mkdirSync(exportDirectory, { recursive: true });
@@ -76,6 +78,29 @@ async function exportImage(imageName: string): Promise<void> {
         const writeStream = fs.createWriteStream(exportPath);
         readableStream.pipe(writeStream);
         log.debug(imageData);
+        // If the docker.destination.exportDirectory.gitEnabled is true, commit the file to the repo and push 
+        if (configuration.get('docker.destination.exportDirectory.git.enabled')) {
+            log.info(`Git is enabled; committing and pushing the exported image to the repository`);
+            // https://isomorphic-git.org/docs/en/snippets
+            // The local Git config should apply. At the time of writing, the global Git config is not used
+            const repo = {
+                fs: fs,
+                dir: exportDirectory,
+                http: isoHttp,
+                ref: configuration.get('docker.destination.exportDirectory.git.branch'),
+                remote: configuration.get('docker.destination.exportDirectory.git.remoteName'),
+                onAuth: () => ({
+                    username: configuration.get('docker.dockerHub.username'),
+                    password: configuration.get('docker.dockerHub.password')
+                })
+            }
+            // `...` is the spread operator and adds the key-value pairs from the object
+            git.add({ ...repo, filepath: fileName });
+            git.commit({ ...repo, message: `Exported image: ${data.RepoTags[0]}` });
+            git.push({ ...repo});
+              
+            
+        }
     } catch (err) {
         log.error(err);
     }

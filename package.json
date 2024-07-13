@@ -22,6 +22,7 @@
     "convict": "^6.2.4",
     "dockerode": "^4.0.2",
     "dotenv": "^16.4.5",
+    "isomorphic-git": "^1.27.1",
     "limax": "^4.1.0",
     "loglevel": "^1.9.1"
   }
