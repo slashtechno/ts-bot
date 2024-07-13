@@ -74,6 +74,12 @@ const config = convict({
             default: false,
             env: 'DOCKER_DESTINATION_GIT_ENABLED'
           },
+          force: {
+            doc: "Force push the Git commit",
+            format: Boolean,
+            default: false,
+            env: 'DOCKER_DESTINATION_GIT_FORCE'
+          },
           branch: {
             doc: 'The branch to commit the exported image to',
             format: String,
@@ -86,20 +92,19 @@ const config = convict({
             default: 'origin',
             env: 'DOCKER_DESTINATION_GIT_REMOTE_NAME'
           },
-          
-          // author: {
-          //   email: {
-          //     doc: 'The email address to use for the Git commit',
-          //     format: String,
-          //     default: null,
-          //     env: 'DOCKER_DESTINATION_GIT_AUTHOR_EMAIL'
-          //   },
-          //   name: {
-          //     doc: 'The name to use for the Git commit',
-          //     format: String,
-          //     default: null,
-          //     env: 'DOCKER_DESTINATION_GIT_AUTHOR_NAME'
-          //   }
+          author: {
+            email: {
+              doc: 'The email address to use for the Git commit',
+              format: String,
+              default: "", 
+              env: 'DOCKER_DESTINATION_GIT_AUTHOR_EMAIL'
+            },
+            name: {
+              doc: 'The name to use for the Git commit',
+              format: String,
+              default: "",
+              env: 'DOCKER_DESTINATION_GIT_AUTHOR_NAME'
+            }
           },
           credentials: {
             username: {
@@ -119,7 +124,7 @@ const config = convict({
       },
     }
   },
-);
+});
 
 // Perform validation
 // https://github.com/mozilla/node-convict/tree/master/packages/convict#configvalidateoptions
