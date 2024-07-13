@@ -27,14 +27,23 @@ app.command(
     async ({ command, ack, respond }) => {
         await ack();
         await respond("Test API command received");
-        docker.listContainers({ all: true }, function (err, containers) {
-            containers.forEach(function (containerInfo) {
-                docker.getContainer(containerInfo.Id).inspect(function (err, data) {
+        // docker.listContainers({ all: true }, function (err, containers) {
+        //     containers.forEach(function (containerInfo) {
+        //         docker.getContainer(containerInfo.Id).inspect(function (err, data) {
+        //             log.debug(data);
+        //         });
+        //     });
+        // }
+        // );
+        docker.pull('hello-world:latest')
+            .then(function () {
+                docker.getImage('hello-world').inspect(function (err, data) {
                     log.debug(data);
                 });
+            })
+            .catch(function (error) {
+                log.error(error);
             });
-        }
-        );
     }
 );
 

@@ -52,6 +52,14 @@ const config = convict({
       env: 'DOCKER_SOURCE_PASSWORD'
     },
   },
+  destination: {
+    exportDirectory: {
+      doc: 'The directory to export the Docker image to',
+      format: String,
+      default: '',
+      env: 'DOCKER_DESTINATION_EXPORT_DIRECTORY'
+    },
+  }
   },
 });
 
