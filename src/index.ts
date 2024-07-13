@@ -25,7 +25,13 @@ app.command(
     async ({ command, ack, respond }) => {
         await ack();
         // https://docker-docs.uclv.cu/registry/spec/api/#listing-image-tags
-        axios.get('https://registry.hub.docker.com/v2/repositories/library/ubuntu/tags')
+        // axios.get('https://registry.hub.docker.com/v2/repositories/library/ubuntu/tags')
+        // https://stackoverflow.com/questions/56193110/how-can-i-use-docker-registry-http-api-v2-to-obtain-a-list-of-all-repositories-i/60549026#60549026
+        axios.get(`${configuration.get('docker.registry')}/v2/library/ubuntu/manifests/latest`, {
+            headers: {
+                "Authorization": `Bearer ${getDockerJwt()}`
+            }
+        })
             .then((response) => {
                 log.debug(response.data);
                 (async () => {
@@ -44,6 +50,24 @@ app.command(
     }
 )
 
+function getDockerJwt() {
+    axios.get(`${configuration.get('docker.registry')}/v2/users/login`, {
+        data: {
+            "username": configuration.get('docker.username'),
+            "password": configuration.get('docker.password')
+        }
+    })
+        .then((response) => {
+            log.debug(response.data.token);
+            return response.data.token;
+        })
+        .catch((error) => {
+            log.error(error);
+            return null;
+        });
+}
+
+
 // (async () => {
 //     await app.start(configuration.get('server.port'));
 //     log.info(`⚡️ Bolt app is running on port ${configuration.get('server.port')}`);
@@ -52,5 +76,6 @@ app.command(
 await app.start(configuration.get('server.port'));
 
 // Log configuration
-log.setDefaultLevel('debug');
+// log.setDefaultLevel('debug');
+log.setLevel('debug');
 log.debug(configuration.toString());
