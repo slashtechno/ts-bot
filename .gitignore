@@ -1,3 +1,9 @@
+# Ignore .tar files (docker image exports)
+*.tar
+
+
+# ---
+
 # Logs
 logs
 *.log

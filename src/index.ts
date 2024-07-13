@@ -4,6 +4,7 @@ import pkg from '@slack/bolt';
 import axios from 'axios';
 import Docker from 'dockerode';
 const { App } = pkg;
+import fs from 'fs';
 
 const app = new App({
     appToken: configuration.get('slack.appToken'),
@@ -36,14 +37,30 @@ app.command(
         // }
         // );
         docker.pull('hello-world:latest')
-            .then(function () {
-                docker.getImage('hello-world').inspect(function (err, data) {
+            .then(() => {
+                const image = docker.getImage('hello-world');
+                image.inspect((err, data) => {
+                    if (err) {
+                        log.error(err);
+                    }
                     log.debug(data);
                 });
-            })
-            .catch(function (error) {
-                log.error(error);
-            });
+                // Get the tarball of the image
+                image.get((err, data) => {
+                    if (err) {
+                        log.error(err);
+                    } else {
+                        const readableStream = data;
+                        const writeStream = fs.createWriteStream('hello-world.tar');
+                        readableStream.pipe(writeStream);
+                        log.debug(data);
+                    }
+                }
+                );
+        })
+        .catch(function (error) {
+            log.error(error);
+        });
     }
 );
 
