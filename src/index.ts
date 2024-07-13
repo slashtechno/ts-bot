@@ -26,24 +26,17 @@ app.command(
     }
 );
 
+
+
 app.command(
     '/export-docker-image',
     async ({ command, ack, respond }) => {
         await ack();
-        // docker.listContainers({ all: true }, function (err, containers) {
-        //     containers.forEach(function (containerInfo) {
-        //         docker.getContainer(containerInfo.Id).inspect(function (err, data) {
-        //             log.debug(data);
-        //         });
-        //     });
-        // }
-        // );
-
-        // TODO: Figure out why inspect sometimes states that the image does not exist
         const image = command.text;
         await respond(`Pulling image: ${image}`);
+        // TODO: Add authentication
         docker.pull(image)
-            .then(async () => {
+            .finally(async () => {
                 log.info(`Exporting image: ${image}`);
                 await exportImage(image);
                 await respond(`Exported image: ${image}`);
@@ -55,6 +48,84 @@ app.command(
             });
     }
 );
+
+app.command(
+    '/clone-docker-image',
+    async ({ command, ack, respond }) => {
+        await ack();
+        const image = command.text;
+        await respond(`Pulling image: ${image}`);
+        // TODO: Add authentication
+        docker.pull(image)
+            .then(async () => {
+                log.info(`Cloning image: ${image}`);
+                await cloneImage(image).catch(async (error) => {
+                    await respond(`Error cloning image: ${image}; check the logs for more information`);
+                    log.error(error);
+                }
+                ).finally(async () => {
+                    await respond(`Cloned image: ${image}`);
+                }
+                );
+
+            })
+            .catch(async (error) => {
+                await respond(`Error cloning image: ${image}; check the logs for more information`);
+                log.error(error);
+            });
+    }
+);
+
+
+async function cloneImage(imageName: string): Promise<void> {
+    try {
+        const image = docker.getImage(imageName);
+        const data = await image.inspect();
+        log.debug(data);
+        const registryHostname = configuration.get('docker.destination.registry.hostname');
+
+        // The `?` is a ternary operator
+        // It is equivalent to:
+        // if imageName.includes('/'):
+        //     justTheImageName = imageName.split('/')[1]
+        // else:
+        //     justTheImageName = imageName
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Conditional_Operator
+        const fullImageName = data.RepoTags[0];
+        const newImageNameWithoutHost = fullImageName.includes('/') ? fullImageName.split('/')[1] : fullImageName;
+        // Get the tag (the fullImageName should always have a tag)
+        // const tag = newImageNameWithoutHost.includes(':') ? newImageNameWithoutHost.split(':')[1] : 'latest';
+        const tag = newImageNameWithoutHost.split(':')[1] 
+        // Remove the tag from the image name
+        const newImageNameClean = newImageNameWithoutHost.includes(':') ? newImageNameWithoutHost.split(':')[0] : newImageNameWithoutHost;
+        log.debug(`newImageNameClean: ${newImageNameClean}`);
+
+        const newImageName = `${registryHostname}/${newImageNameClean}`;
+        await image.tag(
+            {
+                repo: newImageName,
+                tag: tag
+            }
+        )
+        const newImage = docker.getImage(newImageName);
+
+        const options = {
+            tag: tag,
+            authconfig: { // Include the auth configuration here
+                username: configuration.get('docker.destination.registry.username'),
+                password: configuration.get('docker.destination.registry.password')
+            }
+        };
+        newImage.push(options, (error, data) => {
+            if (error) {
+                log.error(error);
+            }
+            log.debug(data);
+        });
+    } catch (err) {
+        log.error(err);
+    }
+}
 
 async function exportImage(imageName: string): Promise<void> {
     try {
@@ -82,29 +153,29 @@ async function exportImage(imageName: string): Promise<void> {
 }
 
 // Promise is needed since the function is async
-async function dockerLogin(): Promise<string | null> {
-    try {
-        const response = await axios.post("https://hub.docker.com/v2/users/login",
-            {
-                username: configuration.get('docker.dockerHub.username'),
-                password: configuration.get('docker.dockerHub.password')
-            },
-            {
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            });
-        const token = response.data.token;
-        log.debug(`Docker login token: ${token}`);
-        return token;
-    }
-    catch (error) {
-        log.error(error);
-        log.debug(`data: ${error.response.data}`);
-        return null;
-    }
+// async function dockerLogin(): Promise<string | null> {
+//     try {
+//         const response = await axios.post("https://hub.docker.com/v2/users/login",
+//             {
+//                 username: configuration.get('docker.dockerHub.username'),
+//                 password: configuration.get('docker.dockerHub.password')
+//             },
+//             {
+//                 headers: {
+//                     "Content-Type": "application/json"
+//                 }
+//             });
+//         const token = response.data.token;
+//         log.debug(`Docker login token: ${token}`);
+//         return token;
+//     }
+//     catch (error) {
+//         log.error(error);
+//         log.debug(`data: ${error.response.data}`);
+//         return null;
+//     }
 
-}
+// }
 
 
 // (async () => {

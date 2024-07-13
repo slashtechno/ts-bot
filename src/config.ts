@@ -66,6 +66,26 @@ const config = convict({
       default: path.join(__dirname, 'export'),
       env: 'DOCKER_DESTINATION_EXPORT_DIRECTORY'
     },
+    registry: {
+      hostname: {
+        doc: 'The address of the Docker registry to push to',
+        format: String,
+        default: 'registry.hub.docker.com',
+        env: 'DOCKER_DESTINATION_REGISTRY_HOSTNAME'
+      },
+      username: {
+        doc: 'The username to use for the Docker registry',
+        format: String,
+        default: '',
+        env: 'DOCKER_DESTINATION_USERNAME'
+      },
+      password: {
+        doc: 'The password or personal access token to use for the Docker registry',
+        format: String,
+        default: '',
+        env: 'DOCKER_DESTINATION_PASSWORD'
+      },
+    },
   }
   },
 });
