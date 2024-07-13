@@ -12,27 +12,35 @@ const app = new App({
 
 app.command(
     '/hello',
-    async ({command, ack, respond}) => {
-    // Acknowledge 
-    await ack();
-    log.info(`Received command: ${command.text}`);
-    await respond("Hello, world! :)\nYou said: " + command.text);
+    async ({ command, ack, respond }) => {
+        // Acknowledge 
+        await ack();
+        log.info(`Received command: ${command.text}`);
+        await respond("Hello, world! :)\nYou said: " + command.text);
     }
 );
 
 app.command(
-    '/test-api' ,
-    async ({command, ack, respond}) => {
+    '/test-api',
+    async ({ command, ack, respond }) => {
         await ack();
         // https://docker-docs.uclv.cu/registry/spec/api/#listing-image-tags
         axios.get('https://registry.hub.docker.com/v2/repositories/library/ubuntu/tags')
-        .then((response) => {
-            respond(response.data);
-        })
-        .catch((error) => {
-            log.error(error);
-            respond("Error encountered - check logs");
-        });
+            .then((response) => {
+                log.debug(response.data);
+                (async () => {
+                    await respond("Response: " + JSON.stringify(response.data));
+                }
+                )();
+
+            })
+            .catch((error) => {
+                log.error(error);
+                (async () => {
+                    await respond("Error: " + error);
+                }
+                )();
+            });
     }
 )
 
