@@ -46,10 +46,10 @@ app.command(
         await respond(`Pulling image: ${image}`);
         docker.pull(image)
             .finally(async () => {
-                await respond(`Exported image: ${image}`);
-                log.info(`Exporting image: ${image}`);
-                await exportImage(image);
-
+                await exportImage(image).then(async () => {
+                    log.info(`Exported image: ${image}`);
+                    await respond(`Exported image: ${image}`);
+                });
             })
             .catch(async (error) => {
                 await respond(`Error exporting image: ${image}; check the logs for more information`);
@@ -79,49 +79,57 @@ async function exportImage(imageName: string): Promise<void> {
         const writeStream = fs.createWriteStream(exportPath);
         readableStream.pipe(writeStream);
 
-    } catch (err) {
-        log.error(err);
-    }
-    try {
-        // If the docker.destination.exportDirectory.gitEnabled is true, commit the file to the repo and push 
-        if (configuration.get('docker.destination.exportDirectory.git.enabled')) {
-            log.info(`Git is enabled; committing and pushing the exported image to the repository`);
-            // https://isomorphic-git.org/docs/en/snippets
-            // The local Git config should apply. At the time of writing, the global Git config is not used
-            const author = {
-                name: configuration.get('docker.destination.exportDirectory.git.author.name'),
-                email: configuration.get('docker.destination.exportDirectory.git.author.email')
-            }
-            if (author.email === "" || author.name === "") {
-                log.warn(`Author name or email is null; will attempt to use .git/config`);
-            }
-            const repo = {
-                fs: fs,
-                dir: exportDirectory,
-                http: isoHttp,
-                ref: configuration.get('docker.destination.exportDirectory.git.branch'),
-                remote: configuration.get('docker.destination.exportDirectory.git.remoteName'),
-                onAuth: () => ({
-                    username: configuration.get('docker.destination.exportDirectory.git.credentials.username'),
-                    password: configuration.get('docker.destination.exportDirectory.git.credentials.password')
-                }),
-                force: configuration.get('docker.destination.exportDirectory.git.force'),
-            }
-            // `...` is the spread operator and adds the key-value pairs from the object
-            await git.fetch({ ...repo });
-            // git.add({ ...repo, filepath: fileName });
-            await git.statusMatrix(repo).then((status) =>
-                Promise.all(
-                    status.map(([filepath, , worktreeStatus]) =>
-                        worktreeStatus ? git.add({ ...repo, filepath }) : git.remove({ ...repo, filepath })
+        writeStream.on('finish', async () => {
+            
+                // If the docker.destination.exportDirectory.gitEnabled is true, commit the file to the repo and push 
+                if (configuration.get('docker.destination.exportDirectory.git.enabled')) {
+                    log.info(`Git is enabled; committing and pushing the exported image to the repository`);
+                    // https://isomorphic-git.org/docs/en/snippets
+                    // The local Git config should apply. At the time of writing, the global Git config is not used
+                    const author = {
+                        name: configuration.get('docker.destination.exportDirectory.git.author.name'),
+                        email: configuration.get('docker.destination.exportDirectory.git.author.email')
+                    }
+                    if (author.email === "" || author.name === "") {
+                        log.warn(`Author name or email is null; will attempt to use .git/config`);
+                    }
+                    const repo = {
+                        fs: fs,
+                        dir: exportDirectory,
+                        http: isoHttp,
+                        ref: configuration.get('docker.destination.exportDirectory.git.branch'),
+                        remote: configuration.get('docker.destination.exportDirectory.git.remoteName'),
+                        onAuth: () => ({
+                            username: configuration.get('docker.destination.exportDirectory.git.credentials.username'),
+                            password: configuration.get('docker.destination.exportDirectory.git.credentials.password')
+                        }),
+                        force: configuration.get('docker.destination.exportDirectory.git.force'),
+                    }
+                    // `...` is the spread operator and adds the key-value pairs from the object
+                    // await git.fetch({ ...repo });
+                    // git.add({ ...repo, filepath: fileName });
+                    await git.statusMatrix(repo).then((status) =>
+                        Promise.all(
+                            status.map(([filepath, , worktreeStatus]) =>
+                                worktreeStatus ? git.add({ ...repo, filepath }) : git.remove({ ...repo, filepath })
+                            )
+                        )
                     )
-                )
-            )
-            const hash = await git.commit({ ...repo, message: `Exported image: ${imageName}` });
-            log.debug(`Commit hash: ${hash}`);
-            await git.merge({ ...repo, theirs: 'HEAD', ours: hash });
-            await git.push({ ...repo });
-        }
+                    const hash = await git.commit({ ...repo, message: `Exported image: ${imageName}` })
+                    .then((hash) => {
+                        log.debug(`Commit hash: ${hash}`);
+                        return hash;
+                    })
+                    .catch((error) => {
+                        log.error(error);
+                    }).finally(async () => {
+                        await git.push({ ...repo });
+                    });
+                    // log.debug(`Commit hash: ${hash}`);
+                    // await git.merge({ ...repo, theirs: 'HEAD', ours: hash });
+                    // await git.push({ ...repo });
+                }
+        });
     } catch (err) {
         log.error(err);
     }
