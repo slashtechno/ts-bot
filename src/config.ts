@@ -30,25 +30,28 @@ const config = convict({
       env: 'PORT',
     },
   },
+  // https://docs.docker.com/docker-hub/api/latest/#tag/authentication
   docker: {
-    registry: {
-      doc: 'The Docker registry to use',
-      format: String,
-      default: 'https://registry.hub.docker.com',
-      env: 'DOCKER_REGISTRY',
-    },
+    dockerHub: {
+    // registry: {
+    //   doc: 'The Docker registry to use',
+    //   format: String,
+    //   default: 'https://hub.docker.com',
+    //   env: 'DOCKER_SOURCE_REGISTRY'
+    // },
     username: {
       doc: 'The username to use for the Docker registry',
       format: String,
       default: '',
-      env: 'DOCKER_USERNAME'
+      env: 'DOCKER_SOURCE_USERNAME'
     },
     password: {
-      doc: 'The password to use for the Docker registry',
+      doc: 'The password or personal access token to use for the Docker registry',
       format: String,
       default: '',
-      env: 'DOCKER_PASSWORD'
+      env: 'DOCKER_SOURCE_PASSWORD'
     },
+  },
   },
 });
 
