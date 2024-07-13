@@ -40,89 +40,33 @@ const config = convict({
   // https://docs.docker.com/docker-hub/api/latest/#tag/authentication
   docker: {
     dockerHub: {
-      // registry: {
-      //   doc: 'The Docker registry to use',
-      //   format: String,
-      //   default: 'https://hub.docker.com',
-      //   env: 'DOCKER_SOURCE_REGISTRY'
-      // },
-      username: {
-        doc: 'The username to use for the Docker registry',
-        format: String,
-        default: '',
-        env: 'DOCKER_SOURCE_USERNAME'
-      },
-      password: {
-        doc: 'The password or personal access token to use for the Docker registry',
-        format: String,
-        default: '',
-        env: 'DOCKER_SOURCE_PASSWORD'
-      },
+    // registry: {
+    //   doc: 'The Docker registry to use',
+    //   format: String,
+    //   default: 'https://hub.docker.com',
+    //   env: 'DOCKER_SOURCE_REGISTRY'
+    // },
+    username: {
+      doc: 'The username to use for the Docker registry',
+      format: String,
+      default: '',
+      env: 'DOCKER_SOURCE_USERNAME'
     },
-    destination: {
-      exportDirectory: {
-        exportDirectoryPath: {
-          doc: 'The directory to export the Docker image to',
-          format: String,
-          default: path.join(__dirname, 'export'),
-          env: 'DOCKER_DESTINATION_EXPORT_DIRECTORY'
-        },
-        git: {
-          enabled: {
-            doc: "Automatically commit and push the exported image to a pre-configured Git repository",
-            format: Boolean,
-            default: false,
-            env: 'DOCKER_DESTINATION_GIT_ENABLED'
-          },
-          force: {
-            doc: "Force push the Git commit",
-            format: Boolean,
-            default: false,
-            env: 'DOCKER_DESTINATION_GIT_FORCE'
-          },
-          branch: {
-            doc: 'The branch to commit the exported image to',
-            format: String,
-            default: 'main',
-            env: 'DOCKER_DESTINATION_GIT_BRANCH'
-          },
-          remoteName: {
-            doc: 'The name of the remote to push the Git commit to',
-            format: String,
-            default: 'origin',
-            env: 'DOCKER_DESTINATION_GIT_REMOTE_NAME'
-          },
-          author: {
-            email: {
-              doc: 'The email address to use for the Git commit',
-              format: String,
-              default: "", 
-              env: 'DOCKER_DESTINATION_GIT_AUTHOR_EMAIL'
-            },
-            name: {
-              doc: 'The name to use for the Git commit',
-              format: String,
-              default: "",
-              env: 'DOCKER_DESTINATION_GIT_AUTHOR_NAME'
-            }
-          },
-          credentials: {
-            username: {
-              doc: 'The username to use for the Git repository',
-              format: String,
-              default: '',
-              env: 'DOCKER_DESTINATION_GIT_USERNAME'
-            },
-            password: {
-              doc: 'The password to use for the Git repository',
-              format: String,
-              default: '',
-              env: 'DOCKER_DESTINATION_GIT_PASSWORD'
-            },
-          },
-        },
-      },
-    }
+    password: {
+      doc: 'The password or personal access token to use for the Docker registry',
+      format: String,
+      default: '',
+      env: 'DOCKER_SOURCE_PASSWORD'
+    },
+  },
+  destination: {
+    exportDirectory: {
+      doc: 'The directory to export the Docker image to',
+      format: String,
+      default: path.join(__dirname, 'export'),
+      env: 'DOCKER_DESTINATION_EXPORT_DIRECTORY'
+    },
+  }
   },
 });
 
