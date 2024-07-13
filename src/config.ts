@@ -1,8 +1,15 @@
 import dotenv from 'dotenv';
+import path from 'path';
 import convict from 'convict';
+import { fileURLToPath } from 'url';
+
 
 // Load environment variables from .env file
 dotenv.config();
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Define a schema for your configuration
 // https://gist.github.com/zaach/5061155
@@ -56,7 +63,7 @@ const config = convict({
     exportDirectory: {
       doc: 'The directory to export the Docker image to',
       format: String,
-      default: '',
+      default: path.join(__dirname, 'export'),
       env: 'DOCKER_DESTINATION_EXPORT_DIRECTORY'
     },
   }

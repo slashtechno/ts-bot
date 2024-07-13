@@ -1,5 +1,5 @@
-# Ignore .tar files (docker image exports)
-*.tar
+# Ignore image exports
+export/
 
 
 # ---

@@ -2,9 +2,13 @@ import configuration from './config.js';
 import log from 'loglevel';
 import pkg from '@slack/bolt';
 import axios from 'axios';
+import path from 'path';
 import Docker from 'dockerode';
+// https://github.com/simov/slugify/issues/24#issuecomment-629725749
+import slug from 'limax';
 const { App } = pkg;
 import fs from 'fs';
+import exp from 'constants';
 
 const app = new App({
     appToken: configuration.get('slack.appToken'),
@@ -36,33 +40,43 @@ app.command(
         //     });
         // }
         // );
+        
+        // TODO: Figure out why inspect sometimes states that the image does not exist
         docker.pull('hello-world:latest')
-            .then(() => {
-                const image = docker.getImage('hello-world');
-                image.inspect((err, data) => {
-                    if (err) {
-                        log.error(err);
-                    }
-                    log.debug(data);
-                });
-                // Get the tarball of the image
-                image.get((err, data) => {
-                    if (err) {
-                        log.error(err);
-                    } else {
-                        const readableStream = data;
-                        const writeStream = fs.createWriteStream('hello-world.tar');
-                        readableStream.pipe(writeStream);
-                        log.debug(data);
-                    }
-                }
-                );
-        })
-        .catch(function (error) {
-            log.error(error);
-        });
+            .then(async () => {
+                log.debug("Pulled hello-world:latest");
+                await exportImage('hello-world:latest');
+            })
+            .catch(function (error) {
+                log.error(error);
+            });
     }
 );
+
+async function exportImage(imageName: string): Promise<void> {
+    try {
+        const image = docker.getImage(imageName);
+        const data = await image.inspect(); 
+        log.debug(data);
+        // Create the directory if it does not exist
+        // https://stackoverflow.com/a/26815894/18270659
+        const exportDirectory = configuration.get('docker.destination.exportDirectory');
+        if (!fs.existsSync(exportDirectory)) {
+            log.warn(`Export directory does not exist: ${exportDirectory}; creating it`);
+            fs.mkdirSync(exportDirectory, { recursive: true });
+        }
+        // In the filename, have the image name, tag, and platform
+        const fileName = slug(`${data.RepoTags[0]}-${data.Architecture}`) + '.tar';
+        const imageData = await image.get();
+        const readableStream = imageData;
+        const exportPath = path.join(exportDirectory, fileName);
+        const writeStream = fs.createWriteStream(exportPath);
+        readableStream.pipe(writeStream);
+        log.debug(imageData);
+    } catch (err) {
+        log.error(err);
+    }
+}
 
 // Promise is needed since the function is async
 async function dockerLogin(): Promise<string | null> {
