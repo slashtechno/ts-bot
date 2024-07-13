@@ -12,6 +12,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/convict": "^6.1.6",
+    "@types/dockerode": "^3.3.29",
     "@types/node": "^20.14.10",
     "prettier": "3.3.2",
     "typescript": "^5.5.3"
@@ -19,6 +20,7 @@
   "dependencies": {
     "@slack/bolt": "^3.19.0",
     "convict": "^6.2.4",
+    "dockerode": "^4.0.2",
     "dotenv": "^16.4.5",
     "loglevel": "^1.9.1"
   }

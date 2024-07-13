@@ -2,6 +2,7 @@ import configuration from './config.js';
 import log from 'loglevel';
 import pkg from '@slack/bolt';
 import axios from 'axios';
+import Docker from 'dockerode';
 const { App } = pkg;
 
 const app = new App({
@@ -10,6 +11,7 @@ const app = new App({
     socketMode: true,
 });
 
+const docker = new Docker();
 app.command(
     '/hello',
     async ({ command, ack, respond }) => {
@@ -24,45 +26,31 @@ app.command(
     '/test-api',
     async ({ command, ack, respond }) => {
         await ack();
-        // https://distribution.github.io/distribution/spec/api/#pulling-an-image
-        // axios.get('https://registry.hub.docker.com/v2/repositories/library/ubuntu/tags')
-        // https://stackoverflow.com/questions/56193110/how-can-i-use-docker-registry-http-api-v2-to-obtain-a-list-of-all-repositories-i/60549026#60549026
-        axios.get(`https://registry.hub.docker.com/v2/library/ubuntu/manifests/latest`, {
-            headers: {
-                "Authorization": `Bearer ${await dockerLogin()}`
-            }
-        })
-            .then((response) => {
-                log.debug(response.data);
-                (async () => {
-                    await respond("Response: " + JSON.stringify(response.data));
-                }
-                )();
-
-            })
-            .catch((error) => {
-                log.error(error);
-                (async () => {
-                    await respond("Error: " + error);
-                }
-                )();
+        await respond("Test API command received");
+        docker.listContainers({ all: true }, function (err, containers) {
+            containers.forEach(function (containerInfo) {
+                docker.getContainer(containerInfo.Id).inspect(function (err, data) {
+                    log.debug(data);
+                });
             });
+        }
+        );
     }
-)
+);
 
 // Promise is needed since the function is async
 async function dockerLogin(): Promise<string | null> {
     try {
-        const response = await axios.post("https://hub.docker.com/v2/users/login", 
+        const response = await axios.post("https://hub.docker.com/v2/users/login",
             {
                 username: configuration.get('docker.dockerHub.username'),
                 password: configuration.get('docker.dockerHub.password')
             },
             {
-            headers: {
-                "Content-Type": "application/json"
-            }
-        });
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
         const token = response.data.token;
         log.debug(`Docker login token: ${token}`);
         return token;
