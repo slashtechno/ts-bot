@@ -26,6 +26,7 @@ app.command(
     }
 );
 
+// TODO: Add authentication when pulling
 
 
 app.command(
@@ -34,7 +35,6 @@ app.command(
         await ack();
         const image = command.text;
         await respond(`Pulling image: ${image}`);
-        // TODO: Add authentication
         docker.pull(image)
             .finally(async () => {
                 log.info(`Exporting image: ${image}`);
@@ -55,7 +55,6 @@ app.command(
         await ack();
         const image = command.text;
         await respond(`Pulling image: ${image}`);
-        // TODO: Add authentication
         docker.pull(image)
             .then(async () => {
                 log.info(`Cloning image: ${image}`);
@@ -78,80 +77,84 @@ app.command(
 
 
 async function cloneImage(imageName: string): Promise<void> {
-    try {
-        const image = docker.getImage(imageName);
-        const data = await image.inspect();
-        log.debug(data);
-        const registryHostname = configuration.get('docker.destination.registry.hostname');
-
-        // The `?` is a ternary operator
-        // It is equivalent to:
-        // if imageName.includes('/'):
-        //     justTheImageName = imageName.split('/')[1]
-        // else:
-        //     justTheImageName = imageName
-        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Conditional_Operator
-        const fullImageName = data.RepoTags[0];
-        const newImageNameWithoutHost = fullImageName.includes('/') ? fullImageName.split('/')[1] : fullImageName;
-        // Get the tag (the fullImageName should always have a tag)
-        // const tag = newImageNameWithoutHost.includes(':') ? newImageNameWithoutHost.split(':')[1] : 'latest';
-        const tag = newImageNameWithoutHost.split(':')[1] 
-        // Remove the tag from the image name
-        const newImageNameClean = newImageNameWithoutHost.includes(':') ? newImageNameWithoutHost.split(':')[0] : newImageNameWithoutHost;
-        log.debug(`newImageNameClean: ${newImageNameClean}`);
-
-        const newImageName = `${registryHostname}/${newImageNameClean}`;
-        await image.tag(
-            {
-                repo: newImageName,
-                tag: tag
-            }
-        )
-        const newImage = docker.getImage(newImageName);
-
-        const options = {
-            tag: tag,
-            authconfig: { // Include the auth configuration here
-                username: configuration.get('docker.destination.registry.username'),
-                password: configuration.get('docker.destination.registry.password')
-            }
-        };
-        newImage.push(options, (error, data) => {
-            if (error) {
-                log.error(error);
-            }
+    return new Promise(async (resolve, reject) => {
+        try {
+            const image = docker.getImage(imageName);
+            const data = await image.inspect();
             log.debug(data);
-        });
-    } catch (err) {
-        log.error(err);
-    }
+            const registryHostname = configuration.get('docker.destination.registry.hostname');
+
+            // The `?` is a ternary operator
+            // It is equivalent to:
+            // if imageName.includes('/'):
+            //     justTheImageName = imageName.split('/')[1]
+            // else:
+            //     justTheImageName = imageName
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Conditional_Operator
+            const fullImageName = data.RepoTags[0];
+            const newImageNameWithoutHost = fullImageName.includes('/') ? fullImageName.split('/')[1] : fullImageName;
+            // Get the tag (the fullImageName should always have a tag)
+            // const tag = newImageNameWithoutHost.includes(':') ? newImageNameWithoutHost.split(':')[1] : 'latest';
+            const tag = newImageNameWithoutHost.split(':')[1]
+            // Remove the tag from the image name
+            const newImageNameClean = newImageNameWithoutHost.includes(':') ? newImageNameWithoutHost.split(':')[0] : newImageNameWithoutHost;
+            log.debug(`newImageNameClean: ${newImageNameClean}`);
+
+            const newImageName = `${registryHostname}/${newImageNameClean}`;
+            await image.tag(
+                {
+                    repo: newImageName,
+                    tag: tag
+                }
+            )
+            const newImage = docker.getImage(newImageName);
+
+            const options = {
+                tag: tag,
+                authconfig: { // Include the auth configuration here
+                    username: configuration.get('docker.destination.registry.username'),
+                    password: configuration.get('docker.destination.registry.password')
+                }
+            };
+            newImage.push(options, (error, res) => {
+                if (error) {
+                    reject(error);
+                }
+                // https://github.com/apocas/dockerode/issues/743#issuecomment-1725256963
+                // res.pipe(process.stdout);
+            });
+        } catch (err) {
+            reject(err);
+        }
+    });
 }
 
 async function exportImage(imageName: string): Promise<void> {
-    try {
-        const image = docker.getImage(imageName);
-        const data = await image.inspect();
-        log.debug(data);
-        // Create the directory if it does not exist
-        // https://stackoverflow.com/a/26815894/18270659
-        const exportDirectory = configuration.get('docker.destination.exportDirectory');
-        if (!fs.existsSync(exportDirectory)) {
-            log.warn(`Export directory does not exist: ${exportDirectory}; creating it`);
-            fs.mkdirSync(exportDirectory, { recursive: true });
+    return new Promise(async (resolve, reject) => {
+        try {
+            const image = docker.getImage(imageName);
+            const data = await image.inspect();
+            log.debug(data);
+            // Create the directory if it does not exist
+            // https://stackoverflow.com/a/26815894/18270659
+            const exportDirectory = configuration.get('docker.destination.exportDirectory');
+            if (!fs.existsSync(exportDirectory)) {
+                log.warn(`Export directory does not exist: ${exportDirectory}; creating it`);
+                fs.mkdirSync(exportDirectory, { recursive: true });
+            }
+            // In the filename, have the image name, tag, and platfoxrm
+            const fileName = slug(`${data.RepoTags[0]}-${data.Architecture}`) + '.tar';
+            const imageData = await image.get();
+            const readableStream = imageData;
+            const exportPath = path.join(exportDirectory, fileName);
+            const writeStream = fs.createWriteStream(exportPath);
+            readableStream.pipe(writeStream);
+            log.debug(imageData);
+        } catch (err) {
+            reject(err);
         }
-        // In the filename, have the image name, tag, and platform
-        const fileName = slug(`${data.RepoTags[0]}-${data.Architecture}`) + '.tar';
-        const imageData = await image.get();
-        const readableStream = imageData;
-        const exportPath = path.join(exportDirectory, fileName);
-        const writeStream = fs.createWriteStream(exportPath);
-        readableStream.pipe(writeStream);
-        log.debug(imageData);
-    } catch (err) {
-        log.error(err);
-    }
+    });
 }
-
 // Promise is needed since the function is async
 // async function dockerLogin(): Promise<string | null> {
 //     try {
