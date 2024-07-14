@@ -7,11 +7,12 @@ features:
     display_name: ts-bot
     always_online: false
   slash_commands:
-    - command: /hello
-      description: Just say hello with an emoticon because why not?
-      should_escape: false
     - command: /export-docker-image
       description: Export a Docker image
+      usage_hint: <image>:<tag>
+      should_escape: false
+    - command: /clone-docker-image
+      description: Clone a Docker image to a private registry
       usage_hint: <image>:<tag>
       should_escape: false
 oauth_config:

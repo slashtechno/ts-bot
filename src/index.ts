@@ -2,7 +2,7 @@ import configuration from './config.js';
 import log from 'loglevel';
 import pkg from '@slack/bolt';
 import axios from 'axios';
-import path from 'path';
+import path, { resolve } from 'path';
 import Docker from 'dockerode';
 // https://github.com/simov/slugify/issues/24#issuecomment-629725749
 import slug from 'limax';
@@ -16,64 +16,47 @@ const app = new App({
 });
 
 const docker = new Docker();
-app.command(
-    '/hello',
-    async ({ command, ack, respond }) => {
-        // Acknowledge 
-        await ack();
-        log.info(`Received command: ${command.text}`);
-        await respond("Hello, world! :)\nYou said: " + command.text);
-    }
-);
 
 // TODO: Add authentication when pulling
 
-
 app.command(
-    '/export-docker-image',
+    /.*-docker-image$/,
+    // https://api.slack.com/interactivity/slash-commands#app_command_handling
     async ({ command, ack, respond }) => {
         await ack();
+        // Pull the image
         const image = command.text;
         await respond(`Pulling image: ${image}`);
-        docker.pull(image)
-            .finally(async () => {
-                log.info(`Exporting image: ${image}`);
-                await exportImage(image);
-                await respond(`Exported image: ${image}`);
-
-            })
-            .catch(async (error) => {
-                await respond(`Error exporting image: ${image}; check the logs for more information`);
-                log.error(error);
-            });
-    }
-);
-
-app.command(
-    '/clone-docker-image',
-    async ({ command, ack, respond }) => {
-        await ack();
-        const image = command.text;
-        await respond(`Pulling image: ${image}`);
-        docker.pull(image)
-            .then(async () => {
-                log.info(`Cloning image: ${image}`);
-                await cloneImage(image).catch(async (error) => {
+        await docker.pull(image).then(async () => {
+            log.info(`Pulled image: ${image}`);
+            await respond(`Pulled image: ${image}`);
+        }).catch(async (error) => {
+            await respond(`Error pulling image: ${image}; check the logs for more information`);
+            log.error(error);
+        });
+        switch (command.command) {
+            case '/export-docker-image':
+                exportImage(image).then(async () => {
+                    await respond(`Exported image: ${image}`);
+                }).catch(async (error) => {
+                    await respond(`Error exporting image: ${image}; check the logs for more information`);
+                    log.error(error);
+                });
+                break;
+            case '/clone-docker-image':
+                cloneImage(image).then(async () => {
+                    await respond(`Cloned image: ${image}`);
+                }).catch(async (error) => {
                     await respond(`Error cloning image: ${image}; check the logs for more information`);
                     log.error(error);
-                }
-                ).finally(async () => {
-                    await respond(`Cloned image: ${image}`);
-                }
-                );
-
-            })
-            .catch(async (error) => {
-                await respond(`Error cloning image: ${image}; check the logs for more information`);
-                log.error(error);
-            });
+                });
+                break;
+            default:
+                respond(`Command not recognized: ${command.command}`);
+        }
     }
-);
+
+)
 
 
 async function cloneImage(imageName: string): Promise<void> {
@@ -119,12 +102,16 @@ async function cloneImage(imageName: string): Promise<void> {
             newImage.push(options, (error, res) => {
                 if (error) {
                     reject(error);
+                    return;
                 }
+                log.info(`Pushed image: ${newImageName}:${tag}`);
+                resolve();
                 // https://github.com/apocas/dockerode/issues/743#issuecomment-1725256963
                 // res.pipe(process.stdout);
             });
         } catch (err) {
             reject(err);
+            return;
         }
     });
 }
@@ -142,7 +129,7 @@ async function exportImage(imageName: string): Promise<void> {
                 log.warn(`Export directory does not exist: ${exportDirectory}; creating it`);
                 fs.mkdirSync(exportDirectory, { recursive: true });
             }
-            // In the filename, have the image name, tag, and platfoxrm
+            // In the filename, have the image name, tag, and platform
             const fileName = slug(`${data.RepoTags[0]}-${data.Architecture}`) + '.tar';
             const imageData = await image.get();
             const readableStream = imageData;
@@ -152,33 +139,11 @@ async function exportImage(imageName: string): Promise<void> {
             log.debug(imageData);
         } catch (err) {
             reject(err);
+            return;
         }
+        resolve();
     });
 }
-// Promise is needed since the function is async
-// async function dockerLogin(): Promise<string | null> {
-//     try {
-//         const response = await axios.post("https://hub.docker.com/v2/users/login",
-//             {
-//                 username: configuration.get('docker.dockerHub.username'),
-//                 password: configuration.get('docker.dockerHub.password')
-//             },
-//             {
-//                 headers: {
-//                     "Content-Type": "application/json"
-//                 }
-//             });
-//         const token = response.data.token;
-//         log.debug(`Docker login token: ${token}`);
-//         return token;
-//     }
-//     catch (error) {
-//         log.error(error);
-//         log.debug(`data: ${error.response.data}`);
-//         return null;
-//     }
-
-// }
 
 
 // (async () => {
