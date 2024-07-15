@@ -28,7 +28,7 @@ app.command(
         // Pull the image
         const image = command.text;
         // Check if the user is allowed to use the app
-        const allowedRole = configuration.get('slack.allowedRoleId');
+        const allowedRole = configuration.get('slack.allowedUserGroupId');
         // If the allowed role is not set, allow all roles
         if (allowedRole === '') {
             log.debug('Allowed role is not set; allowing all roles');

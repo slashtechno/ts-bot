@@ -27,11 +27,11 @@ const config = convict({
       default: '',
       env: 'SLACK_BOT_TOKEN',
     },
-    allowedRoleId: {
+    allowedUserGroupId: {
       doc: 'The role that is allowed to use the app. Leave blank to allow all roles',
       format: String,
       default: '',
-      env: 'SLACK_ALLOWED_ROLE_ID',
+      env: 'SLACK_ALLOWED_USER_GROUP_ID',
     },
   },
   server: {
