@@ -81,7 +81,7 @@ async function cloneImage(imageName: string): Promise<void> {
         try {
             const image = docker.getImage(imageName);
             const data = await image.inspect();
-            log.debug(data);
+            // log.debug(data);
             const registryHostname = configuration.get('docker.destination.registry.hostname');
 
             // The `?` is a ternary operator
@@ -138,7 +138,7 @@ async function exportImage(imageName: string): Promise<void> {
         try {
             const image = docker.getImage(imageName);
             const data = await image.inspect();
-            log.debug(data);
+            // log.debug(data);
             // Create the directory if it does not exist
             // https://stackoverflow.com/a/26815894/18270659
             const exportDirectory = configuration.get('docker.destination.exportDirectory');
@@ -153,7 +153,7 @@ async function exportImage(imageName: string): Promise<void> {
             const exportPath = path.join(exportDirectory, fileName);
             const writeStream = fs.createWriteStream(exportPath);
             readableStream.pipe(writeStream);
-            log.debug(imageData);
+            // log.debug(imageData);
         } catch (err) {
             reject(err);
             return;
