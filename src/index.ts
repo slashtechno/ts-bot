@@ -1,6 +1,6 @@
 import configuration from './config.js';
 import log from 'loglevel';
-import {WebClient} from '@slack/web-api';
+import { WebClient } from '@slack/web-api';
 import pkg from '@slack/bolt';
 const { App } = pkg;
 import path, { resolve } from 'path';
@@ -35,7 +35,7 @@ app.command(
         } else {
             // Get all roles for the user
             // https://api.slack.com/methods/usergroups.users.list
-            const users = await app.client.usergroups.users.list({usergroup: allowedRole});
+            const users = await app.client.usergroups.users.list({ usergroup: allowedRole });
             if (!users.users.includes(command.user_id)) {
                 await respond(`You are not in the user group allowed to use this app`);
                 return;
@@ -54,6 +54,7 @@ app.command(
         switch (command.command) {
             case '/export-docker-image':
                 exportImage(image).then(async () => {
+                    log.info(`Exported image: ${image}`);
                     await respond(`Exported image: ${image}`);
                 }).catch(async (error) => {
                     await respond(`Error exporting image: ${image}; check the logs for more information`);
@@ -62,6 +63,7 @@ app.command(
                 break;
             case '/clone-docker-image':
                 cloneImage(image).then(async () => {
+                    log.info(`Cloned image: ${image}`);
                     await respond(`Cloned image: ${image}`);
                 }).catch(async (error) => {
                     await respond(`Error cloning image: ${image}; check the logs for more information`);
@@ -121,7 +123,6 @@ async function cloneImage(imageName: string): Promise<void> {
                     reject(error);
                     return;
                 }
-                log.info(`Pushed image: ${newImageName}:${tag}`);
                 resolve();
                 // https://github.com/apocas/dockerode/issues/743#issuecomment-1725256963
                 // res.pipe(process.stdout);
