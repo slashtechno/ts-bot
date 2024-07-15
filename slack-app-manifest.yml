@@ -19,6 +19,7 @@ oauth_config:
   scopes:
     bot:
       - commands
+      - usergroups:read
 settings:
   interactivity:
     is_enabled: true

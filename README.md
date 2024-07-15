@@ -4,4 +4,5 @@ A Slack bot written in TypeScript for mirroring Docker images between Docker Hub
 1. Clone the repository.
 2. Install the dependencies with `npm install`.
 3. Build the project with `npm run build`.
-4. Run the bot with `node .`.
+4. Copy the `.env.example` file to `.env` and fill in the required values.
+5. Run the bot with `node .`.
