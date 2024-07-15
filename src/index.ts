@@ -1,19 +1,20 @@
 import configuration from './config.js';
 import log from 'loglevel';
+import {WebClient} from '@slack/web-api';
 import pkg from '@slack/bolt';
-import axios from 'axios';
+const { App } = pkg;
 import path, { resolve } from 'path';
 import Docker from 'dockerode';
 // https://github.com/simov/slugify/issues/24#issuecomment-629725749
 import slug from 'limax';
-const { App } = pkg;
 import fs from 'fs';
-
 const app = new App({
     appToken: configuration.get('slack.appToken'),
     token: configuration.get('slack.botToken'),
     socketMode: true,
 });
+const web = new WebClient(configuration.get('slack.botToken'));
+
 
 const docker = new Docker();
 
@@ -26,6 +27,22 @@ app.command(
         await ack();
         // Pull the image
         const image = command.text;
+        // Check if the user is allowed to use the app
+        const allowedRole = configuration.get('slack.allowedRoleId');
+        // If the allowed role is not set, allow all roles
+        if (allowedRole === '') {
+            log.debug('Allowed role is not set; allowing all roles');
+        } else {
+            // Get all roles for the user
+            // https://api.slack.com/methods/usergroups.users.list
+            const users = await app.client.usergroups.users.list({usergroup: allowedRole});
+            if (!users.users.includes(command.user_id)) {
+                await respond(`You are not in the user group allowed to use this app`);
+                return;
+            } else {
+                log.debug(`User ${command.user_id} is in the allowed user group`);
+            }
+        }
         await respond(`Pulling image: ${image}`);
         await docker.pull(image).then(async () => {
             log.info(`Pulled image: ${image}`);

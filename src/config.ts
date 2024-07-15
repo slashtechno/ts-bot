@@ -26,7 +26,12 @@ const config = convict({
       format: String,
       default: '',
       env: 'SLACK_BOT_TOKEN',
-
+    },
+    allowedRoleId: {
+      doc: 'The role that is allowed to use the app. Leave blank to allow all roles',
+      format: String,
+      default: '',
+      env: 'SLACK_ALLOWED_ROLE_ID',
     },
   },
   server: {
@@ -40,53 +45,53 @@ const config = convict({
   // https://docs.docker.com/docker-hub/api/latest/#tag/authentication
   docker: {
     dockerHub: {
-    // registry: {
-    //   doc: 'The Docker registry to use',
-    //   format: String,
-    //   default: 'https://hub.docker.com',
-    //   env: 'DOCKER_SOURCE_REGISTRY'
-    // },
-    username: {
-      doc: 'The username to use for the Docker registry',
-      format: String,
-      default: '',
-      env: 'DOCKER_SOURCE_USERNAME'
-    },
-    password: {
-      doc: 'The password or personal access token to use for the Docker registry',
-      format: String,
-      default: '',
-      env: 'DOCKER_SOURCE_PASSWORD'
-    },
-  },
-  destination: {
-    exportDirectory: {
-      doc: 'The directory to export the Docker image to',
-      format: String,
-      default: path.join(__dirname, 'export'),
-      env: 'DOCKER_DESTINATION_EXPORT_DIRECTORY'
-    },
-    registry: {
-      hostname: {
-        doc: 'The address of the Docker registry to push to',
-        format: String,
-        default: 'registry.hub.docker.com',
-        env: 'DOCKER_DESTINATION_REGISTRY_HOSTNAME'
-      },
+      // registry: {
+      //   doc: 'The Docker registry to use',
+      //   format: String,
+      //   default: 'https://hub.docker.com',
+      //   env: 'DOCKER_SOURCE_REGISTRY'
+      // },
       username: {
         doc: 'The username to use for the Docker registry',
         format: String,
         default: '',
-        env: 'DOCKER_DESTINATION_USERNAME'
+        env: 'DOCKER_SOURCE_USERNAME'
       },
       password: {
         doc: 'The password or personal access token to use for the Docker registry',
         format: String,
         default: '',
-        env: 'DOCKER_DESTINATION_PASSWORD'
+        env: 'DOCKER_SOURCE_PASSWORD'
       },
     },
-  }
+    destination: {
+      exportDirectory: {
+        doc: 'The directory to export the Docker image to',
+        format: String,
+        default: path.join(__dirname, 'export'),
+        env: 'DOCKER_DESTINATION_EXPORT_DIRECTORY'
+      },
+      registry: {
+        hostname: {
+          doc: 'The address of the Docker registry to push to',
+          format: String,
+          default: 'registry.hub.docker.com',
+          env: 'DOCKER_DESTINATION_REGISTRY_HOSTNAME'
+        },
+        username: {
+          doc: 'The username to use for the Docker registry',
+          format: String,
+          default: '',
+          env: 'DOCKER_DESTINATION_USERNAME'
+        },
+        password: {
+          doc: 'The password or personal access token to use for the Docker registry',
+          format: String,
+          default: '',
+          env: 'DOCKER_DESTINATION_PASSWORD'
+        },
+      },
+    }
   },
 });
 

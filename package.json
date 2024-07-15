@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@slack/bolt": "^3.19.0",
+    "@slack/web-api": "^7.3.1",
     "convict": "^6.2.4",
     "dockerode": "^4.0.2",
     "dotenv": "^16.4.5",
