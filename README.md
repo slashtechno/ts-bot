@@ -1,5 +1,6 @@
 # Mirror what?  
 A Slack bot written in TypeScript for mirroring Docker images between Docker Hub and a private registry or exporting a Docker image to a tarball.  
+![Screenshot of the bot being used to both clone and export library/hello-world](screenshot.png)
 ## Installation and setup  
 ## Node.js and npm  
 1. Clone the repository.
